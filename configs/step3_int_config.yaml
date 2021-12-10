@@ -3,10 +3,14 @@ aggregation_functions_captions: [
 ] # 'Сумма', 'Среднее значение', 'Среднеквадратичное отклонение', max, min, countd - возможные функции агрегации
 rows:
     'Осуществление доступа к аппаратным и программным средствам КФЗ':
-      formulae1: 't_1_avg + t_2_avg'
+      variable1: 't_3_1_avg'
+      formulae1: 't_2_1_avg + t_2_2_avg'
     'Анализ состояния охраняемой зоны':
-      formulae1: 't_3_avg + t_4_avg + t_5_avg '
+      variable1: 't_3_2_avg'
+      formulae1: 't_2_3_avg + t_2_4_avg + t_2_5_avg '
     'Блокирование информации в КФЗ':
-      formulae1: '0.33 * t_6_avg + 0.33 * t_7_avg + 0.33 * t_8_avg'
+      variable1: 't_3_3_avg'
+      formulae1: '0.33 * t_2_6_avg + 0.33 * t_2_7_avg + 0.33 * t_2_8_avg'
     'Проникновение в охраняемую зону':
-      formulae1: 't_9_avg + t_10_avg + t_11_avg'
+      variable1: 't_3_4_avg'
+      formulae1: 't_2_9_avg + t_2_10_avg + t_2_11_avg'
