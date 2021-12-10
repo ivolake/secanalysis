@@ -209,17 +209,15 @@ class InputDataProcessor:
 
 class CalculatingDataProcessor:
     def __init__(self,
-                 input_df: pd.DataFrame,
                  calculator: Calculator,
                  config_path: str = None,
                  config: dict = None):
-        self.input_df = input_df
         self.config = config
         self.config_path = config_path
         self.__calculator = calculator
 
         if self.config_path is None and self.config is None:
-            print('Error. Для валидации необходимо указать конфигурацию файла данных или путь до файла с конфигурацией.')
+            print('Error. Необходимо указать конфигурацию файла данных или путь до файла с конфигурацией.')
         elif self.config_path is not None and self.config is not None:
             print('Error. Нельзя одновременно указывать и конфигурацию, и путь до файла с конфигурацией.')
         # elif self.config is None and self.config_path is None:
@@ -248,16 +246,13 @@ class CalculatingDataProcessor:
                                       columns=cols)
 
     def calculate_aggregations(self):
-        # sum, avg, max, min, countd - возможные функции агрегации
         for func_i, func_name in enumerate(self.config['aggregation_functions_captions']):
             vals = pd.Series(index=self.dataframe.index, name=func_name)
             for i in range(self.dataframe.shape[0]):
                 row_name = self.dataframe.iloc[i].name[1]
-                expert_assessments = self.dataframe.iloc[i].to_list()
                 variable = self.config['rows'][row_name][f'variable{func_i+1}']
                 formulae = self.config['rows'][row_name][f'formulae{func_i+1}']
-                value = self.calculator.evaluate(formulae,
-                                                 data=expert_assessments)
+                value = self.calculator.evaluate(formulae)
                 # print(f'{formulae} = {value}')
                 vals[self.dataframe.iloc[i].name] = value
                 self.calculator.set_variable(variable,
@@ -269,9 +264,3 @@ class CalculatingDataProcessor:
         self.create_dataframe()
         self.calculate_aggregations()
         return self.dataframe
-
-
-class FinalCalculatingDataProcessor:
-    def __init__(self,
-                 dfs: list):
-        self.dfs = dfs
