@@ -7,3 +7,4 @@ ruamel.yaml.clib==0.2.6
 six==1.16.0
 sympy==1.9
 PyQt6==6.1.0
+openpyxl==3.0.9
