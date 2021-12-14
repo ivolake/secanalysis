@@ -33,6 +33,7 @@ class Form(QMainWindow):
         scroll = QScrollArea(self.second)
         layout = QVBoxLayout(self.second)
         self.table = QTableWidget(self.second)
+
         scroll.setWidget(self.table)
         layout.addWidget(self.table)
         Button_table = QPushButton('Создать',self.second)
@@ -85,12 +86,17 @@ class Form(QMainWindow):
         old = df.columns[0][1]
         old1 = df.columns[11][1]
         df = df.rename(columns={old: '', old1: ''})
-        #df = pd.DataFrame({"a": [4, 5, 6], "b": [7, 8, 9], "c": [10, 11, 12]}, index=[1, 2, 3])
         self.table.setColumnCount(len(df.columns))
         self.table.setRowCount(len(df.index))
-        for i in range(len(df.index)):
-            for j in range(len(df.columns)):
-                self.table.setItem(i, j, QTableWidgetItem(str(df.iloc[i, j])))
+        # for i in range(len(df.index)):
+        #     for j in range(len(df.columns)):
+        #         self.table.setItem(i, j, QTableWidgetItem(str(df.iloc[i, j])))
+        for i in range(12):
+            for j in range(2):
+                self.table.setItem(j,i,QTableWidgetItem(str('{}\n'.format(df.columns[i][j]))))
+        #self.table.resizeColumnsToContents()
+        self.table.resizeRowsToContents()
+
 
     def choose_folder(self):
         config_dir_name = QFileDialog.getExistingDirectory(self, "Выбрать папку", ".")
