@@ -8,3 +8,4 @@ six==1.16.0
 sympy==1.9
 PyQt6==6.1.0
 openpyxl==3.0.9
+pyqtgraph==0.12.3

@@ -1,10 +1,12 @@
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 from PyQt6.QtWidgets import *
-
 import sys
 import os
 import pandas as pd
+from pyqtgraph import PlotWidget
+import pyqtgraph as pg
+import numpy as np
 
 from Arithmetics import Calculator
 #from GUI_support import DataFrameModel
@@ -15,6 +17,10 @@ class Form(QMainWindow):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+
+
+        ### Старый интерфейс
+
         tab = QTabWidget()
         self.first = QWidget()
         self.second = QWidget()
@@ -39,13 +45,64 @@ class Form(QMainWindow):
         Button_table = QPushButton('Рассчитать',self.first)
         Button_table.setGeometry(150, 100, 120, 20)
         Button_table.clicked.connect(self.get_table)
-
-
-
         self.Label_ListConfigs = QLabel(self.first)
-
         self.Label_ListConfigs.setGeometry(20, 110, 500, 200)
 
+        # Примеры создания графиков
+        graph = QGraphicsView(self.third)
+        scene = QGraphicsScene()
+
+        graph.setScene(scene)
+
+        self.plotWdgt = pg.PlotWidget()
+        data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        plot_item = self.plotWdgt.plot(data)
+
+        proxy_widget = scene.addWidget(self.plotWdgt)
+
+
+        # imv = pg.ImageView(self.third)
+        #
+        # # Create random 3D data set with noisy signals
+        # img = pg.gaussianFilter(np.random.normal(
+        #     size=(200, 200)), (5, 5)) * 20 + 100
+        #
+        # # setting new axis to image
+        # img = img[np.newaxis, :, :]
+        #
+        # # decay data
+        # decay = np.exp(-np.linspace(0, 0.3, 100))[:, np.newaxis, np.newaxis]
+        #
+        # # random data
+        # data = np.random.normal(size=(100, 200, 200))
+        # data += img * decay
+        # data += 2
+        #
+        # # adding time-varying signal
+        # sig = np.zeros(data.shape[0])
+        # sig[30:] += np.exp(-np.linspace(1, 10, 70))
+        # sig[40:] += np.exp(-np.linspace(1, 10, 60))
+        # sig[70:] += np.exp(-np.linspace(1, 10, 30))
+        #
+        # sig = sig[:, np.newaxis, np.newaxis] * 3
+        # data[:, 50:60, 30:40] += sig
+        #
+        # # Displaying the data and assign each frame a time value from 1.0 to 3.0
+        # imv.setImage(data, xvals=np.linspace(1., 3., data.shape[0]))
+        #
+        # # Set a custom color map
+        # colors = [
+        #     (0, 0, 0),
+        #     (45, 5, 61),
+        #     (84, 42, 55),
+        #     (150, 87, 60),
+        #     (208, 171, 141),
+        #     (255, 255, 255)
+        # ]
+
+        # self.GraphWidget = pg.ImageView(self.third)
+        # self.GraphWidget.setGeometry(140, 80, 400, 120)
+        # self.GraphWidget.setObjectName("GraphWidget")
 
 
 
