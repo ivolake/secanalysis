@@ -36,14 +36,16 @@ class Form(QMainWindow):
 
         scroll.setWidget(self.table)
         layout.addWidget(self.table)
-        Button_table = QPushButton('Создать',self.second)
+        Button_table = QPushButton('Рассчитать',self.first)
+        Button_table.setGeometry(150, 100, 120, 20)
         Button_table.clicked.connect(self.get_table)
 
 
 
         self.Label_ListConfigs = QLabel(self.first)
 
-        self.Label_ListConfigs.setGeometry(200, 100, 300, 20)
+        self.Label_ListConfigs.setGeometry(20, 110, 500, 200)
+
 
 
 
@@ -75,11 +77,7 @@ class Form(QMainWindow):
         self.setCentralWidget(tab)
         self.resize(740, 480)
 
-    # def set_dataframe_widget(self,
-    #                          df: pd.DataFrame,
-    #                          parent=None):
-    #     model = DataFrameModel(df, parent=parent)
-    #     self.tableView.setModel(model)
+
     def get_table(self):
         df = pd.read_excel(r'C:\Users\inven\Desktop\Jupyter_Notes\Reshenia_dlya_LST.xlsx', sheet_name='Н1',
                                 header=[0, 1], index_col=0)
@@ -101,9 +99,9 @@ class Form(QMainWindow):
     def choose_folder(self):
         config_dir_name = QFileDialog.getExistingDirectory(self, "Выбрать папку", ".")
         configs = os.listdir(config_dir_name)
-        configs_str = '\n•'.join(configs)
+        configs_str = '\n• '.join(configs)
         self.Label_ListConfigs.setText(f'Вы выбрали папку: {config_dir_name}\n'
-                                       f'Выбранные конфигурационные файлы:\n•{configs_str}')
+                                       f'Выбранные конфигурационные файлы:\n• {configs_str}')
 
 
 if __name__ == '__main__':
