@@ -55,8 +55,9 @@ class Form(QMainWindow):
         graph.setScene(scene)
 
         self.plotWdgt = pg.PlotWidget()
-        data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        plot_item = self.plotWdgt.plot(data)
+        dataX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        dataY = list(reversed([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+        plot_item = self.plotWdgt.plot(x=dataX, y=dataY)
 
         proxy_widget = scene.addWidget(self.plotWdgt)
 
