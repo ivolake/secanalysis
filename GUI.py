@@ -31,8 +31,19 @@ class Form(QMainWindow):
         tab.addTab(self.third, 'Graphics')
 
         Button_ChooseConfigs = QPushButton('Выбрать конфиги', self.first)
-        Button_ChooseConfigs.setGeometry(10, 100, 120, 20)
+        Button_ChooseConfigs.setGeometry(10, 100, 120, 30)
         Button_ChooseConfigs.clicked.connect(self.choose_folder)
+        Button_table = QPushButton('Рассчитать', self.first)
+        Button_table.setGeometry(150, 100, 120, 30)
+        Button_table.clicked.connect(self.get_table)
+        self.Label_ListConfigs = QLabel(self.first)
+        self.Label_ListConfigs.setGeometry(20, 110, 500, 200)
+
+
+
+
+
+
 
         # Создается вертикальный слой на вкладке
         self.vertLayout = QVBoxLayout(self.second)
@@ -84,11 +95,7 @@ class Form(QMainWindow):
 
 
 
-        Button_table = QPushButton('Рассчитать',self.first)
-        Button_table.setGeometry(150, 100, 120, 20)
-        Button_table.clicked.connect(self.get_table)
-        self.Label_ListConfigs = QLabel(self.first)
-        self.Label_ListConfigs.setGeometry(20, 110, 500, 200)
+
 
         # Примеры создания графиков
         graph = QGraphicsView(self.third)
