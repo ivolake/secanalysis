@@ -1,3 +1,4 @@
+name: step1_int_config
 expert_assessments_caption: 'Данные экспертов относительно времени реализации функций'
 expert_assessments_num: 10
 aggregation_functions_captions: [
