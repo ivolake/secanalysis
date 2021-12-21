@@ -1,3 +1,4 @@
+name: step2_def_config
 aggregation_functions_captions: [
     'Среднее значение времени реализации функций',
     'Среднеквадратичное отклонение'
