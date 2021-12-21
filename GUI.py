@@ -34,14 +34,56 @@ class Form(QMainWindow):
         Button_ChooseConfigs.setGeometry(10, 100, 120, 20)
         Button_ChooseConfigs.clicked.connect(self.choose_folder)
 
+        # Создается вертикальный слой на вкладке
+        self.vertLayout = QVBoxLayout(self.second)
+        # Создание скроллера на вкладке
+        self.scroller = QScrollArea(self.second)
+        self.scroller.setWidgetResizable(True)
+        # Создаётся виджет содержимого скролла
+        self.scrollAreaWidgetContents_2 = QWidget()
+        # Создается второй вертикальный слой на виджете содержимого
+        self.vertLayout_2 = QVBoxLayout(self.scrollAreaWidgetContents_2)
+        # Создается виджет таблицы на виджете содержимого
+        self.table = QTableWidget(self.scrollAreaWidgetContents_2)
+        self.table.setMinimumSize(1200, 650)
+        self.table.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.table2 = QTableWidget(self.scrollAreaWidgetContents_2)
+        self.table2.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.table2.setMinimumSize(1200, 650)
+        self.table3 = QTableWidget(self.scrollAreaWidgetContents_2)
+        self.table3.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.table3.setMinimumSize(1200, 650)
+        self.table4 = QTableWidget(self.scrollAreaWidgetContents_2)
+        self.table4.setMinimumSize(1200, 650)
+        self.table4.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.table5 = QTableWidget(self.scrollAreaWidgetContents_2)
+        self.table5.setMinimumSize(1200, 650)
+        self.table5.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.table6 = QTableWidget(self.scrollAreaWidgetContents_2)
+        self.table6.setMinimumSize(1200, 650)
+        self.table6.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.table7 = QTableWidget(self.scrollAreaWidgetContents_2)
+        self.table7.setMinimumSize(1200, 650)
+        self.table7.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.table8 = QTableWidget(self.scrollAreaWidgetContents_2)
+        self.table8.setMinimumSize(1200, 650)
+        self.table8.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        # Добавляю таблицу на слой 2
+        self.vertLayout_2.addWidget(self.table)
+        self.vertLayout_2.addWidget(self.table2)
+        self.vertLayout_2.addWidget(self.table3)
+        self.vertLayout_2.addWidget(self.table4)
+        self.vertLayout_2.addWidget(self.table5)
+        self.vertLayout_2.addWidget(self.table6)
+        self.vertLayout_2.addWidget(self.table7)
+        self.vertLayout_2.addWidget(self.table8)
+        # Скрол-арии устанавливается виджет содержимого
+        self.scroller.setWidget(self.scrollAreaWidgetContents_2)
+        # На вертикальный слой добавляется скрол
+        self.vertLayout.addWidget(self.scroller)
 
 
-        scroll = QScrollArea(self.second)
-        layout = QVBoxLayout(self.second)
-        self.table = QTableWidget(self.second)
 
-        scroll.setWidget(self.table)
-        layout.addWidget(self.table)
         Button_table = QPushButton('Рассчитать',self.first)
         Button_table.setGeometry(150, 100, 120, 20)
         Button_table.clicked.connect(self.get_table)
