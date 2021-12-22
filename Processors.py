@@ -68,7 +68,15 @@ class InputDataProcessor:
     def read_dataframe(self):
         dataframe_type = self.data_path[self.data_path.rfind('.'):]
         if dataframe_type in ['.xls', '.xlsx']:
-            self.dataframe = pd.read_excel(self.data_path, sheet_name=self.sheet_name, header=[0, 1], index_col=[0, 1])
+            if self.sheet_name:
+                self.dataframe = pd.read_excel(self.data_path,
+                                               sheet_name=self.sheet_name,
+                                               header=[0, 1],
+                                               index_col=[0, 1])
+            else:
+                self.dataframe = pd.read_excel(self.data_path,
+                                               header=[0, 1],
+                                               index_col=[0, 1])
             return True
         elif dataframe_type in ['.csv']:
             self.dataframe = pd.read_csv()
@@ -256,7 +264,8 @@ class CalculatingDataProcessor:
                 # print(f'{formulae} = {value}')
                 vals[self.dataframe.iloc[i].name] = value
                 self.calculator.set_variable(variable,
-                                             val=value)
+                                             val=value,
+                                             formulae=formulae)
             self.dataframe[func_name] = vals
 
 
