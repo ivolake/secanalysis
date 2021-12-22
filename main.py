@@ -3,7 +3,7 @@ import sys
 from PyQt6.QtWidgets import QApplication
 
 from GUI import Form
-from functions import parse_args, get_yaml
+# from functions import parse_args, get_yaml
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

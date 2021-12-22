@@ -7,11 +7,51 @@ import pandas as pd
 from pyqtgraph import PlotWidget
 import pyqtgraph as pg
 import numpy as np
+from textwrap3 import wrap
 
 from Arithmetics import Calculator
 # from GUI_support import DataFrameModel
-from Processors import InputDataProcessor
-from functions import get_yaml
+from Processors import InputDataProcessor, CalculatingDataProcessor
+from functions import get_yaml, flatten
+
+
+def create_plot_widget(parent,
+                       dataX,
+                       dataY,
+                       title=''):
+
+    graph = QGraphicsView(parent)
+    graph.setVisible(False)
+    scene = QGraphicsScene()
+    graph.setScene(scene)
+    plot_widget = pg.PlotWidget()
+    plot_widget.setBackground('white')
+    plot_widget.showGrid(True, True)
+    plot_widget.setTitle(title)
+
+    plot_item = plot_widget.plot(x=dataX,
+                                 y=dataY,
+                                 pen=pg.mkPen('black', width=3))
+
+    return plot_widget, plot_item
+
+
+def set_data_to_table(df, table):
+    # df = pd.read_excel(r'C:\Users\bzakh\OneDrive\Desktop\Решения для ЛСТ.xlsx', sheet_name='Н1',
+    #                    header=[0, 1], index_col=0)
+    # df = pd.read_excel(r'C:\Users\inven\Desktop\Jupyter_Notes\Reshenia_dlya_LST.xlsx', sheet_name='Н1',
+    #                         header=[0, 1], index_col=0)
+    df_t = flatten(df)
+    table.setRowCount(df_t.shape[0])
+    table.setColumnCount(df_t.shape[1])
+    # for i in range(len(df.index)):
+    #     for j in range(len(df.columns)):
+    #         self.table.setItem(i, j, QTableWidgetItem(str(df.iloc[i, j])))
+    for i in range(df_t.shape[0]):
+        for j in range(df_t.shape[1]):
+            table.setItem(i, j, QTableWidgetItem(str('{}\n'.format(df_t.iloc[i][j]))))
+    # self.table.resizeColumnsToContents()
+    table.resizeRowsToContents()
 
 
 class Form(QMainWindow):
@@ -19,13 +59,11 @@ class Form(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # Старый интерфейс
-
         tab = QTabWidget()
 
         self.setWindowTitle('SecAnalysis')
         self.setCentralWidget(tab)
-        self.resize(740, 480)
+        # self.resize(740, 480)
 
         self.first = QWidget()
         self.second = QWidget()
@@ -35,156 +73,295 @@ class Form(QMainWindow):
         tab.addTab(self.second, 'Таблицы')
         tab.addTab(self.third, 'Графики')
 
+        self.Button_ChooseDefDatapath = None
+        self.Button_ChooseIntDatapath = None
+        self.Button_ChooseConfigs = None
+        self.Button_Calculate = None
+        self.Label_IntDatapath = None
+        self.Label_DefDatapath = None
         self.Label_ListConfigs = None
         self.set_first_tab()
 
-        self.vertLayout = None
-        self.scroller = None
-        self.scrollAreaWidgetContents_2 = None
-        self.vertLayout_2 = None
-        self.table = None
-        self.table2 = None
-        self.table3 = None
-        self.table4 = None
-        self.table5 = None
-        self.table6 = None
-        self.table7 = None
-        self.table8 = None
+        self.Layout1_tab2 = None
+        self.scroller_tab2 = None
+        self.scrollAreaWidgetContents_tab2 = None
+        self.Layout2_tab2 = None
+        self.tables = None
+        self.tables_names = ['Н1', 'Н2', 'Н3', 'З1', 'З2', 'З3', 'Л', 'Р']
+        self.Button_SaveAll = None
         self.set_second_tab()
 
-        self.plotWdgt = None
+        self.Layout1_tab3 = None
+        self.scroller_tab3 = None
+        self.scrollAreaWidgetContents_tab3 = None
+        self.Layout2_tab3 = None
         self.set_third_tab()
 
-        self.filepaths = None
+        self.def_datapath = None
+        self.int_datapath = None
+        self.configs_filepaths = None
+
+        self.step1_int_df = None
+        self.step2_int_df = None
+        self.step3_int_df = None
+        self.step1_def_df = None
+        self.step2_def_df = None
+        self.step3_def_df = None
+        self.L_df = None
+        self.R_df = None
 
     def set_first_tab(self):
-        Button_ChooseConfigs = QPushButton('Выбрать конфиги', self.first)
-        Button_ChooseConfigs.setGeometry(10, 100, 120, 20)
-        Button_ChooseConfigs.clicked.connect(self.choose_folder)
+        self.Button_ChooseDefDatapath = QPushButton('Выбрать исходные данные защиты', self.first)
+        self.Button_ChooseDefDatapath.setGeometry(10, 20, 200, 25)
+        self.Button_ChooseDefDatapath.clicked.connect(self.choose_def_datapath)
 
-        Button_table = QPushButton('Рассчитать', self.first)
-        Button_table.setGeometry(150, 100, 120, 20)
-        Button_table.clicked.connect(self.calculate_tables)
+        self.Button_ChooseIntDatapath = QPushButton('Выбрать исходные данные нарушителя', self.first)
+        self.Button_ChooseIntDatapath.setGeometry(10, 60, 230, 25)
+        self.Button_ChooseIntDatapath.clicked.connect(self.choose_int_datapath)
+
+        self.Button_ChooseConfigs = QPushButton('Выбрать конфигурационные файлы', self.first)
+        self.Button_ChooseConfigs.setGeometry(10, 100, 210, 25)
+        self.Button_ChooseConfigs.clicked.connect(self.choose_configs_folder)
+
+        self.Button_Calculate = QPushButton('Рассчитать', self.first)
+        self.Button_Calculate.setGeometry(240, 100, 120, 25)
+        self.Button_Calculate.clicked.connect(self.calculate_tables)
+
+        self.Label_DefDatapath = QLabel(self.first)
+        self.Label_DefDatapath.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.Label_DefDatapath.setGeometry(220, 20, 500, 40)
+
+        self.Label_IntDatapath = QLabel(self.first)
+        self.Label_IntDatapath.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.Label_IntDatapath.setGeometry(250, 60, 500, 40)
+
         self.Label_ListConfigs = QLabel(self.first)
-        self.Label_ListConfigs.setGeometry(20, 110, 500, 200)
+        self.Label_ListConfigs.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.Label_ListConfigs.setGeometry(10, 130, 500, 500)
 
     def set_second_tab(self):
         # Создается вертикальный слой на вкладке
-        self.vertLayout = QVBoxLayout(self.second)
+        self.Layout1_tab2 = QVBoxLayout(self.second)
         # Создание скроллера на вкладке
-        self.scroller = QScrollArea(self.second)
-        self.scroller.setWidgetResizable(True)
+        self.scroller_tab2 = QScrollArea(self.second)
+        self.scroller_tab2.setWidgetResizable(True)
         # Создаётся виджет содержимого скролла
-        self.scrollAreaWidgetContents_2 = QWidget()
+        self.scrollAreaWidgetContents_tab2 = QWidget()
         # Создается второй вертикальный слой на виджете содержимого
-        self.vertLayout_2 = QVBoxLayout(self.scrollAreaWidgetContents_2)
+        self.Layout2_tab2 = QGridLayout(self.scrollAreaWidgetContents_tab2)
+
+        # Сохранение содержимого таблиц
+        self.Button_SaveAll = QPushButton('Сохранить в excel-файл', self.scrollAreaWidgetContents_tab2)
+        self.Button_SaveAll.setMinimumSize(150, 20)
+        self.Button_SaveAll.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.Button_SaveAll.clicked.connect(lambda x: self.save_tables_content)
+        # Добавляю кнопку на слой 2
+        self.Layout2_tab2.addWidget(self.Button_SaveAll)
+
         # Создается виджет таблицы на виджете содержимого
-        self.table = QTableWidget(self.scrollAreaWidgetContents_2)
-        self.table.setMinimumSize(1200, 650)
-        self.table.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.table2 = QTableWidget(self.scrollAreaWidgetContents_2)
-        self.table2.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.table2.setMinimumSize(1200, 650)
-        self.table3 = QTableWidget(self.scrollAreaWidgetContents_2)
-        self.table3.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.table3.setMinimumSize(1200, 650)
-        self.table4 = QTableWidget(self.scrollAreaWidgetContents_2)
-        self.table4.setMinimumSize(1200, 650)
-        self.table4.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.table5 = QTableWidget(self.scrollAreaWidgetContents_2)
-        self.table5.setMinimumSize(1200, 650)
-        self.table5.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.table6 = QTableWidget(self.scrollAreaWidgetContents_2)
-        self.table6.setMinimumSize(1200, 650)
-        self.table6.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.table7 = QTableWidget(self.scrollAreaWidgetContents_2)
-        self.table7.setMinimumSize(1200, 650)
-        self.table7.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.table8 = QTableWidget(self.scrollAreaWidgetContents_2)
-        self.table8.setMinimumSize(1200, 650)
-        self.table8.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        # Добавляю таблицу на слой 2
-        self.vertLayout_2.addWidget(self.table)
-        self.vertLayout_2.addWidget(self.table2)
-        self.vertLayout_2.addWidget(self.table3)
-        self.vertLayout_2.addWidget(self.table4)
-        self.vertLayout_2.addWidget(self.table5)
-        self.vertLayout_2.addWidget(self.table6)
-        self.vertLayout_2.addWidget(self.table7)
-        self.vertLayout_2.addWidget(self.table8)
-        # Скрол-арии устанавливается виджет содержимого
-        self.scroller.setWidget(self.scrollAreaWidgetContents_2)
-        # На вертикальный слой добавляется скрол
-        self.vertLayout.addWidget(self.scroller)
+        self.tables = []
+        for i, name in zip(range(1, 8+1), self.tables_names):
+            widget = QTableWidget(self.scrollAreaWidgetContents_tab2)
+            widget.setMinimumSize(1200, 800)
+            widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+            widget_title = QLabel(self.scrollAreaWidgetContents_tab2)
+            widget_title.setAlignment(Qt.AlignmentFlag.AlignTop)
+            widget_title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+            widget_title.setMinimumSize(1200, 50)
+            widget_title.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            widget_title.setText(name)
+            widget_title.setStyleSheet('QLabel {font: 15pt "Consolas";}')
+
+            self.Layout2_tab2.addWidget(widget)
+            self.Layout2_tab2.addWidget(widget_title)
+            self.tables.append(widget)
+
+        # Скролл-арии устанавливается виджет содержимого
+        self.scroller_tab2.setWidget(self.scrollAreaWidgetContents_tab2)
+        # На вертикальный слой добавляется скролл
+        self.Layout1_tab2.addWidget(self.scroller_tab2)
 
     def set_third_tab(self):
         # Примеры создания графиков
-        graph = QGraphicsView(self.third)
-        scene = QGraphicsScene()
+        # graph = QGraphicsView(self.third)
+        # scene = QGraphicsScene()
+        #
+        # graph.setScene(scene)
+        #
+        # self.plotWdgt = pg.PlotWidget()
+        # dataX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        # dataY = list(reversed([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+        # plot_item = self.plotWdgt.plot(x=dataX, y=dataY)
+        #
+        # proxy_widget = scene.addWidget(self.plotWdgt)
 
-        graph.setScene(scene)
+        # Создается вертикальный слой на вкладке
+        self.Layout1_tab3 = QVBoxLayout(self.third)
+        # Создание скроллера на вкладке
+        self.scroller_tab3 = QScrollArea(self.third)
+        self.scroller_tab3.setWidgetResizable(True)
+        # Создаётся виджет содержимого скролла
+        self.scrollAreaWidgetContents_tab3 = QWidget()
+        # Создается второй вертикальный слой на виджете содержимого
+        self.Layout2_tab3 = QGridLayout(self.scrollAreaWidgetContents_tab3)
+        # Создаются виджеты графиков
+        for i in range(1, 16+1):
+            widget, _ = create_plot_widget(parent=self.scrollAreaWidgetContents_tab3,
+                                           dataX=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                                           dataY=list(reversed([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])),
+                                           title=f'acbde{i}')
+            widget.setMinimumSize(400, 400)
+            widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            self.Layout2_tab3.addWidget(widget,
+                                        i // 2 + i % 2,
+                                        2 - i % 2)
+        # Скролл-арии устанавливается виджет содержимого
+        self.scroller_tab3.setWidget(self.scrollAreaWidgetContents_tab3)
+        # На вертикальный слой добавляется скролл
+        self.Layout1_tab3.addWidget(self.scroller_tab3)
 
-        self.plotWdgt = pg.PlotWidget()
-        dataX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        dataY = list(reversed([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
-        plot_item = self.plotWdgt.plot(x=dataX, y=dataY)
 
-        proxy_widget = scene.addWidget(self.plotWdgt)
+    def choose_def_datapath(self):
+        # noinspection PyTypeChecker
+        filepath = QFileDialog.getOpenFileName(self,
+                                               caption="Выбрать файл",
+                                               directory=".")
+        self.def_datapath = filepath[0]
+
+        text = '\n'.join(wrap(f'Вы выбрали файл: {self.def_datapath}', 80))
+
+        self.Label_DefDatapath.setText(text)
+
+    def choose_int_datapath(self):
+        # noinspection PyTypeChecker
+        filepath = QFileDialog.getOpenFileName(self,
+                                               caption="Выбрать файл",
+                                               directory=".")
+        self.int_datapath = filepath[0]
+
+        text = '\n'.join(wrap(f'Вы выбрали файл: {self.int_datapath}', 80))
+
+        self.Label_IntDatapath.setText(text)
+
+    def choose_configs_folder(self):
+        # noinspection PyTypeChecker
+        files_dir_name = QFileDialog.getExistingDirectory(self,
+                                                          caption="Выбрать папку",
+                                                          directory=".")
+        if isinstance(files_dir_name, str) and len(files_dir_name) > 0:
+            self.configs_filepaths = [os.path.abspath(f'{files_dir_name}\\{filename}')
+                                      for filename in
+                                      os.listdir(files_dir_name)]
+            files_str = '\n• '.join(['\n  '.join(wrap(fp, 80)) for fp in os.listdir(files_dir_name)])
+
+            text = f'Вы выбрали папку: {files_dir_name}\n'\
+                   f'Выбранные конфигурационные файлы:\n• {files_str}'
+
+            self.Label_ListConfigs.setText(text)
 
     def calculate_tables(self):
         pass
-        # # data_path = r'C:\Users\bzakh\OneDrive\Desktop\Решения для ЛСТ.xlsx'
-        # if self.filepaths is not None:
-        #     if any(['yaml' in config for config in self.filepaths]):
-        #         configs = {}
-        #         for filepath in self.filepaths:
-        #             config = get_yaml(filepath)
-        #             configs.update({config['name']: config})
-        #             # step1_int_config_path = r'C:\Users\bzakh\OneDrive\Documents\Python_projects\secanalysis\configs\step1_int_config.yaml'
-        #
-        #         calculator = Calculator()
-        #
-        #         idp_int = InputDataProcessor(data_path=configs[''],
-        #                                      calculator=calculator,
-        #                                      sheet_name='Н1',
-        #                                      validate_data=True,
-        #                                      config_path=step1_int_config_path,
-        #                                      validation_params={
-        #                                          'validate_data_shape': True,
-        #                                          'validate_rows': True,
-        #                                          'validate_expert_assessments_caption': True
-        #                                      })
-        #         step1_int_df = idp_int.return_dataframe()
-        #     else:
-        #         print('Ошибка. Все конфигурационные файлы должны быть формата .yaml')
-        # else:
-        #     print('Ошибка. Необходимо выбрать конфигурационные файлы.')
+        # data_path = r'C:\Users\bzakh\OneDrive\Desktop\Решения для ЛСТ.xlsx'
+        if self.configs_filepaths is not None and \
+           self.def_datapath is not None and \
+           self.int_datapath is not None:
+            if any(['yaml' in config for config in self.configs_filepaths]) and \
+               '.xls' in self.def_datapath or '.xlsx' in self.def_datapath or '.csv' in self.def_datapath and \
+               '.xls' in self.int_datapath or '.xlsx' in self.int_datapath or '.csv' in self.int_datapath:
+                configs = {}
+                for filepath in self.configs_filepaths:
+                    config = get_yaml(filepath)
+                    configs.update({config['name']: config})
+                    # step1_int_config_path = r'C:\Users\bzakh\OneDrive\Documents\Python_projects\secanalysis\configs\step1_int_config.yaml'
+
+                calculator = Calculator()
 
 
-    def set_data_to_table(self, df, table):
-        # df = pd.read_excel(r'C:\Users\bzakh\OneDrive\Desktop\Решения для ЛСТ.xlsx', sheet_name='Н1',
-        #                    header=[0, 1], index_col=0)
-        # df = pd.read_excel(r'C:\Users\inven\Desktop\Jupyter_Notes\Reshenia_dlya_LST.xlsx', sheet_name='Н1',
-        #                         header=[0, 1], index_col=0)
-        old = df.columns[0][1]
-        old1 = df.columns[10][1]
-        df = df.rename(columns={old: '', old1: ''})
-        self.table.setColumnCount(len(df.columns))
-        self.table.setRowCount(len(df.index))
-        # for i in range(len(df.index)):
-        #     for j in range(len(df.columns)):
-        #         self.table.setItem(i, j, QTableWidgetItem(str(df.iloc[i, j])))
-        for i in range(11):
-            for j in range(2):
-                self.table.setItem(j, i, QTableWidgetItem(str('{}\n'.format(df.columns[i][j]))))
-        # self.table.resizeColumnsToContents()
-        self.table.resizeRowsToContents()
+                idp_int = InputDataProcessor(data_path=self.int_datapath,
+                                             calculator=calculator,
+                                             # sheet_name='Н1',
+                                             validate_data=True,
+                                             config=configs['step1_int_config'],
+                                             validation_params={
+                                                 'validate_data_shape': True,
+                                                 'validate_rows': True,
+                                                 'validate_expert_assessments_caption': True
+                                             })
+                self.step1_int_df = idp_int.return_dataframe()
+                set_data_to_table(self.step1_int_df, self.tables[0])
 
-    def choose_folder(self):
-        # noinspection PyTypeChecker
-        files_dir_name = QFileDialog.getExistingDirectory(self, "Выбрать папку", ".")
-        self.filepaths = os.listdir(files_dir_name)
-        files_str = '\n• '.join(self.filepaths)
-        self.Label_ListConfigs.setText(f'Вы выбрали папку: {files_dir_name}\n'
-                                       f'Выбранные конфигурационные файлы:\n• {files_str}')
+
+                cdp1_int = CalculatingDataProcessor(calculator=calculator,
+                                                    config=configs['step2_int_config'])
+                self.step2_int_df = cdp1_int.return_dataframe()
+                set_data_to_table(self.step2_int_df, self.tables[1])
+
+
+                cdp2_int = CalculatingDataProcessor(calculator=calculator,
+                                                    config=configs['step3_int_config'])
+                self.step3_int_df = cdp2_int.return_dataframe()
+                set_data_to_table(self.step3_int_df, self.tables[2])
+
+
+                idp_def = InputDataProcessor(data_path=self.def_datapath,
+                                             calculator=calculator,
+                                             # sheet_name='З1',
+                                             validate_data=True,
+                                             config=configs['step1_def_config'],
+                                             validation_params={
+                                                 'validate_data_shape': True,
+                                                 'validate_rows': True,
+                                                 'validate_expert_assessments_caption': True
+                                             })
+                self.step1_def_df = idp_def.return_dataframe()
+                set_data_to_table(self.step1_def_df, self.tables[3])
+
+
+                cdp1_def = CalculatingDataProcessor(calculator=calculator,
+                                                    config=configs['step2_def_config'])
+                self.step2_def_df = cdp1_def.return_dataframe()
+                set_data_to_table(self.step2_def_df, self.tables[4])
+
+
+                cdp2_def = CalculatingDataProcessor(calculator=calculator,
+                                                    config=configs['step3_def_config'])
+                self.step3_def_df = cdp2_def.return_dataframe()
+                set_data_to_table(self.step3_def_df, self.tables[5])
+
+
+                fp_L = CalculatingDataProcessor(calculator=calculator,
+                                                config=configs['L_config'])
+                self.L_df = fp_L.return_dataframe()
+                set_data_to_table(self.L_df, self.tables[6])
+
+
+                fp_R = CalculatingDataProcessor(calculator=calculator,
+                                                config=configs['R_config'])
+                self.R_df = fp_R.return_dataframe()
+                set_data_to_table(self.R_df, self.tables[7])
+
+            else:
+                print('Ошибка. Все конфигурационные файлы должны быть формата .yaml')
+        elif self.configs_filepaths is not None:
+            print('Ошибка. Необходимо выбрать конфигурационные файлы.')
+        elif self.def_datapath is not None:
+            print('Ошибка. Необходимо выбрать файл с данными защиты.')
+        elif self.int_datapath is not None:
+            print('Ошибка. Необходимо выбрать файл с данными нарушителя.')
+
+    def save_tables_content(self):
+        filepath = QFileDialog.getOpenFileName(self,
+                                               caption="Сохранить файл",
+                                               directory=".")
+        savepath = filepath[0]
+        self.step1_int_df.to_excel(savepath, sheet_name=self.tables_names[0])
+        self.step2_int_df.to_excel(savepath, sheet_name=self.tables_names[1])
+        self.step3_int_df.to_excel(savepath, sheet_name=self.tables_names[2])
+        self.step1_def_df.to_excel(savepath, sheet_name=self.tables_names[3])
+        self.step2_def_df.to_excel(savepath, sheet_name=self.tables_names[4])
+        self.step3_def_df.to_excel(savepath, sheet_name=self.tables_names[5])
+        self.L_df.to_excel(savepath, sheet_name=self.tables_names[6])
+        self.R_df.to_excel(savepath, sheet_name=self.tables_names[7])
+
 
