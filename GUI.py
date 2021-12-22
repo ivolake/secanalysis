@@ -18,6 +18,7 @@ from functions import get_yaml, flatten
 def create_plot_widget(parent,
                        dataX,
                        dataY,
+                       points=None,
                        title=''):
 
     graph = QGraphicsView(parent)
@@ -29,11 +30,22 @@ def create_plot_widget(parent,
     plot_widget.showGrid(True, True)
     plot_widget.setTitle(title)
 
-    plot_item = plot_widget.plot(x=dataX,
-                                 y=dataY,
-                                 pen=pg.mkPen('black', width=3))
+    plot_widget.plot(x=dataX,
+                     y=dataY,
+                     pen=pg.mkPen('black', width=3))
 
-    return plot_widget, plot_item
+    if points is not None:
+        for point in points:
+            scatter = pg.ScatterPlotItem(
+                size=6, brush=pg.mkBrush(255, 0, 0, 255))
+            # creating spots using the random position
+            spots = [{'pos': point, 'data': 1}]
+            # adding points to the scatter plot
+            scatter.addPoints(spots)
+            plot_widget.addItem(scatter)
+
+
+    return plot_widget
 
 
 def set_data_to_table(df, table):
@@ -63,7 +75,7 @@ class Form(QMainWindow):
 
         self.setWindowTitle('SecAnalysis')
         self.setCentralWidget(tab)
-        # self.resize(740, 480)
+        self.resize(740, 480)
 
         self.first = QWidget()
         self.second = QWidget()
@@ -86,16 +98,18 @@ class Form(QMainWindow):
         self.scroller_tab2 = None
         self.scrollAreaWidgetContents_tab2 = None
         self.Layout2_tab2 = None
+        self.calculator = None
+        self.configs = None
         self.tables = None
         self.tables_names = ['Н1', 'Н2', 'Н3', 'З1', 'З2', 'З3', 'Л', 'Р']
         self.Button_SaveAll = None
-        self.set_second_tab()
+        # self.set_second_tab()
 
         self.Layout1_tab3 = None
         self.scroller_tab3 = None
         self.scrollAreaWidgetContents_tab3 = None
         self.Layout2_tab3 = None
-        self.set_third_tab()
+        # self.set_third_tab()
 
         self.def_datapath = None
         self.int_datapath = None
@@ -109,6 +123,9 @@ class Form(QMainWindow):
         self.step3_def_df = None
         self.L_df = None
         self.R_df = None
+
+        self.shortcut = QShortcut(QKeySequence('Ctrl+S'), self)
+        self.shortcut.activated.connect(self.save_tables_content)
 
     def set_first_tab(self):
         self.Button_ChooseDefDatapath = QPushButton('Выбрать исходные данные защиты', self.first)
@@ -154,7 +171,7 @@ class Form(QMainWindow):
         self.Button_SaveAll = QPushButton('Сохранить в excel-файл', self.scrollAreaWidgetContents_tab2)
         self.Button_SaveAll.setMinimumSize(150, 20)
         self.Button_SaveAll.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.Button_SaveAll.clicked.connect(lambda x: self.save_tables_content)
+        self.Button_SaveAll.clicked.connect(self.save_tables_content)
         # Добавляю кнопку на слой 2
         self.Layout2_tab2.addWidget(self.Button_SaveAll)
 
@@ -182,20 +199,7 @@ class Form(QMainWindow):
         # На вертикальный слой добавляется скролл
         self.Layout1_tab2.addWidget(self.scroller_tab2)
 
-    def set_third_tab(self):
-        # Примеры создания графиков
-        # graph = QGraphicsView(self.third)
-        # scene = QGraphicsScene()
-        #
-        # graph.setScene(scene)
-        #
-        # self.plotWdgt = pg.PlotWidget()
-        # dataX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        # dataY = list(reversed([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
-        # plot_item = self.plotWdgt.plot(x=dataX, y=dataY)
-        #
-        # proxy_widget = scene.addWidget(self.plotWdgt)
-
+    def set_third_tab(self, calculate_plots=False):
         # Создается вертикальный слой на вкладке
         self.Layout1_tab3 = QVBoxLayout(self.third)
         # Создание скроллера на вкладке
@@ -206,16 +210,33 @@ class Form(QMainWindow):
         # Создается второй вертикальный слой на виджете содержимого
         self.Layout2_tab3 = QGridLayout(self.scrollAreaWidgetContents_tab3)
         # Создаются виджеты графиков
-        for i in range(1, 16+1):
-            widget, _ = create_plot_widget(parent=self.scrollAreaWidgetContents_tab3,
-                                           dataX=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                                           dataY=list(reversed([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])),
-                                           title=f'acbde{i}')
-            widget.setMinimumSize(400, 400)
-            widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-            self.Layout2_tab3.addWidget(widget,
-                                        i // 2 + i % 2,
-                                        2 - i % 2)
+        if calculate_plots:
+            plots_iterator = self.get_plot_data()
+            for i, plotX, plotY, actual_point, title in plots_iterator:
+                # for i in range(1, 16+1):
+                widget = create_plot_widget(parent=self.scrollAreaWidgetContents_tab3,
+                                            dataX=plotX,
+                                            dataY=plotY,
+                                            points=[actual_point],
+                                            title=title)
+                widget.setMinimumSize(400, 400)
+                widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+                # noinspection PyArgumentList
+                self.Layout2_tab3.addWidget(widget,
+                                            i // 2 + i % 2,
+                                            2 - i % 2)
+        else:
+            for i in range(1, 16+1):
+                widget = create_plot_widget(parent=self.scrollAreaWidgetContents_tab3,
+                                            dataX=[],
+                                            dataY=[],
+                                            title=f'{i}')
+                widget.setMinimumSize(400, 400)
+                widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+                # noinspection PyArgumentList
+                self.Layout2_tab3.addWidget(widget,
+                                            i // 2 + i % 2,
+                                            2 - i % 2)
         # Скролл-арии устанавливается виджет содержимого
         self.scroller_tab3.setWidget(self.scrollAreaWidgetContents_tab3)
         # На вертикальный слой добавляется скролл
@@ -261,7 +282,8 @@ class Form(QMainWindow):
             self.Label_ListConfigs.setText(text)
 
     def calculate_tables(self):
-        pass
+        self.set_second_tab()
+
         # data_path = r'C:\Users\bzakh\OneDrive\Desktop\Решения для ЛСТ.xlsx'
         if self.configs_filepaths is not None and \
            self.def_datapath is not None and \
@@ -269,20 +291,20 @@ class Form(QMainWindow):
             if any(['yaml' in config for config in self.configs_filepaths]) and \
                '.xls' in self.def_datapath or '.xlsx' in self.def_datapath or '.csv' in self.def_datapath and \
                '.xls' in self.int_datapath or '.xlsx' in self.int_datapath or '.csv' in self.int_datapath:
-                configs = {}
+                self.configs = {}
                 for filepath in self.configs_filepaths:
                     config = get_yaml(filepath)
-                    configs.update({config['name']: config})
+                    self.configs.update({config['name']: config})
                     # step1_int_config_path = r'C:\Users\bzakh\OneDrive\Documents\Python_projects\secanalysis\configs\step1_int_config.yaml'
 
-                calculator = Calculator()
+                self.calculator = Calculator()
 
 
                 idp_int = InputDataProcessor(data_path=self.int_datapath,
-                                             calculator=calculator,
+                                             calculator=self.calculator,
                                              # sheet_name='Н1',
                                              validate_data=True,
-                                             config=configs['step1_int_config'],
+                                             config=self.configs['step1_int_config'],
                                              validation_params={
                                                  'validate_data_shape': True,
                                                  'validate_rows': True,
@@ -292,23 +314,23 @@ class Form(QMainWindow):
                 set_data_to_table(self.step1_int_df, self.tables[0])
 
 
-                cdp1_int = CalculatingDataProcessor(calculator=calculator,
-                                                    config=configs['step2_int_config'])
+                cdp1_int = CalculatingDataProcessor(calculator=self.calculator,
+                                                    config=self.configs['step2_int_config'])
                 self.step2_int_df = cdp1_int.return_dataframe()
                 set_data_to_table(self.step2_int_df, self.tables[1])
 
 
-                cdp2_int = CalculatingDataProcessor(calculator=calculator,
-                                                    config=configs['step3_int_config'])
+                cdp2_int = CalculatingDataProcessor(calculator=self.calculator,
+                                                    config=self.configs['step3_int_config'])
                 self.step3_int_df = cdp2_int.return_dataframe()
                 set_data_to_table(self.step3_int_df, self.tables[2])
 
 
                 idp_def = InputDataProcessor(data_path=self.def_datapath,
-                                             calculator=calculator,
+                                             calculator=self.calculator,
                                              # sheet_name='З1',
                                              validate_data=True,
-                                             config=configs['step1_def_config'],
+                                             config=self.configs['step1_def_config'],
                                              validation_params={
                                                  'validate_data_shape': True,
                                                  'validate_rows': True,
@@ -318,28 +340,30 @@ class Form(QMainWindow):
                 set_data_to_table(self.step1_def_df, self.tables[3])
 
 
-                cdp1_def = CalculatingDataProcessor(calculator=calculator,
-                                                    config=configs['step2_def_config'])
+                cdp1_def = CalculatingDataProcessor(calculator=self.calculator,
+                                                    config=self.configs['step2_def_config'])
                 self.step2_def_df = cdp1_def.return_dataframe()
                 set_data_to_table(self.step2_def_df, self.tables[4])
 
 
-                cdp2_def = CalculatingDataProcessor(calculator=calculator,
-                                                    config=configs['step3_def_config'])
+                cdp2_def = CalculatingDataProcessor(calculator=self.calculator,
+                                                    config=self.configs['step3_def_config'])
                 self.step3_def_df = cdp2_def.return_dataframe()
                 set_data_to_table(self.step3_def_df, self.tables[5])
 
 
-                fp_L = CalculatingDataProcessor(calculator=calculator,
-                                                config=configs['L_config'])
+                fp_L = CalculatingDataProcessor(calculator=self.calculator,
+                                                config=self.configs['L_config'])
                 self.L_df = fp_L.return_dataframe()
                 set_data_to_table(self.L_df, self.tables[6])
 
 
-                fp_R = CalculatingDataProcessor(calculator=calculator,
-                                                config=configs['R_config'])
+                fp_R = CalculatingDataProcessor(calculator=self.calculator,
+                                                config=self.configs['R_config'])
                 self.R_df = fp_R.return_dataframe()
                 set_data_to_table(self.R_df, self.tables[7])
+
+                self.set_third_tab(calculate_plots=True)
 
             else:
                 print('Ошибка. Все конфигурационные файлы должны быть формата .yaml')
@@ -350,18 +374,207 @@ class Form(QMainWindow):
         elif self.int_datapath is not None:
             print('Ошибка. Необходимо выбрать файл с данными нарушителя.')
 
+    def get_plot_data(self) -> tuple[tuple, tuple]:
+        X = range(0, 100, 1)
+
+        # plot 1
+        formulae = self.calculator.get_variable('e_1')['formulae']
+        point = (
+            self.calculator.get_variable('t_3_1_avg')['value'],
+            self.calculator.get_variable('e_1')['value']
+        )
+        yield 1, X, [self.calculator.evaluate(formulae, data={'t_3_1_avg': x}) for x in X], point, f'e_1(t_3_1_avg)'
+
+        # plot 2
+        formulae = self.calculator.get_variable('e_2')['formulae']
+        point = (
+            self.calculator.get_variable('t_3_2_avg')['value'],
+            self.calculator.get_variable('e_2')['value']
+        )
+        yield 2, X, [self.calculator.evaluate(formulae, data={'t_3_2_avg': x}) for x in X], point, f'e_2(t_3_2_avg)'
+
+        # plot 3
+        formulae = self.calculator.get_variable('e_3')['formulae']
+        point = (
+            self.calculator.get_variable('t_3_3_avg')['value'],
+            self.calculator.get_variable('e_3')['value']
+        )
+        yield 3, X, [self.calculator.evaluate(formulae, data={'t_3_3_avg': x}) for x in X], point, f'e_3(t_3_3_avg)'
+
+        # plot 4
+        formulae = self.calculator.get_variable('e_4')['formulae']
+        point = (
+            self.calculator.get_variable('t_3_4_avg')['value'],
+            self.calculator.get_variable('e_4')['value']
+        )
+        yield 4, X, [self.calculator.evaluate(formulae, data={'t_3_4_avg': x}) for x in X], point, f'e_4(t_3_4_avg)'
+
+        # plot 5
+        formulae = self.calculator.get_variable('e_1')['formulae']
+        point = (
+            self.calculator.get_variable('o_3_1_avg')['value'],
+            self.calculator.get_variable('e_1')['value']
+        )
+        yield 5, X, [self.calculator.evaluate(formulae, data={'o_3_1_avg': x}) for x in X], point, f'e_1(o_3_1_avg)'
+
+        # plot 6
+        formulae = self.calculator.get_variable('e_2')['formulae']
+        point = (
+            self.calculator.get_variable('o_3_2_avg')['value'],
+            self.calculator.get_variable('e_2')['value']
+        )
+        yield 6, X, [self.calculator.evaluate(formulae, data={'o_3_2_avg': x}) for x in X], point, f'e_2(o_3_2_avg)'
+
+        # plot 7
+        formulae = self.calculator.get_variable('e_3')['formulae']
+        point = (
+            self.calculator.get_variable('o_3_3_avg')['value'],
+            self.calculator.get_variable('e_3')['value']
+        )
+        yield 7, X, [self.calculator.evaluate(formulae, data={'o_3_3_avg': x}) for x in X], point, f'e_3(o_3_3_avg)'
+
+        # plot 8
+        formulae = self.calculator.get_variable('e_4')['formulae']
+        point = (
+            self.calculator.get_variable('o_3_4_avg')['value'],
+            self.calculator.get_variable('e_4')['value']
+        )
+        yield 8, X, [self.calculator.evaluate(formulae, data={'o_3_4_avg': x}) for x in X], point, f'e_4(o_3_4_avg)'
+
+        # plot 9
+        formulae = self.calculator.get_variable('e_1')['formulae']
+        point = (
+            self.calculator.get_variable('nu_1_avg')['value'],
+            self.calculator.get_variable('e_1')['value']
+        )
+        yield 9, X, [self.calculator.evaluate(formulae, data={'nu_1_avg': x}) for x in X], point, f'e_1(nu_1_avg)'
+
+        # plot 10
+        formulae = self.calculator.get_variable('e_2')['formulae']
+        point = (
+            self.calculator.get_variable('nu_2_avg')['value'],
+            self.calculator.get_variable('e_2')['value']
+        )
+        yield 10, X, [self.calculator.evaluate(formulae, data={'nu_2_avg': x}) for x in X], point, f'e_2(nu_2_avg)'
+
+        # plot 11
+        formulae = self.calculator.get_variable('e_3')['formulae']
+        point = (
+            self.calculator.get_variable('nu_3_avg')['value'],
+            self.calculator.get_variable('e_3')['value']
+        )
+        yield 11, X, [self.calculator.evaluate(formulae, data={'nu_3_avg': x}) for x in X], point, f'e_3(nu_3_avg)'
+
+        # plot 12
+        formulae = self.calculator.get_variable('e_4')['formulae']
+        point = (
+            self.calculator.get_variable('nu_4_avg')['value'],
+            self.calculator.get_variable('e_4')['value']
+        )
+        yield 12, X, [self.calculator.evaluate(formulae, data={'nu_4_avg': x}) for x in X], point, f'e_4(nu_4_avg)'
+
+        # plot 13
+        formulae = self.calculator.get_variable('e_1')['formulae']
+        e_1_values = [self.calculator.evaluate(formulae, data={'t_3_1_avg': x}) for x in X]
+        point = (
+            self.calculator.get_variable('e_1')['value'],
+            self.calculator.get_variable('E')['value']
+        )
+        formulae = self.calculator.get_variable('E')['formulae']
+        yield 13, e_1_values, [self.calculator.evaluate(formulae, data={'e_1': e_1}) for e_1 in e_1_values], point, f'E(e_1(t_3_1_avg))'
+
+        # plot 14
+        formulae = self.calculator.get_variable('e_2')['formulae']
+        e_2_values = [self.calculator.evaluate(formulae, data={'t_3_2_avg': x}) for x in X]
+        point = (
+            self.calculator.get_variable('e_2')['value'],
+            self.calculator.get_variable('E')['value']
+        )
+        formulae = self.calculator.get_variable('E')['formulae']
+        yield 14, e_2_values, [self.calculator.evaluate(formulae, data={'e_2': e_2}) for e_2 in e_2_values], point, f'E(e_2(t_3_2_avg))'
+
+        # plot 15
+        formulae = self.calculator.get_variable('e_3')['formulae']
+        e_3_values = [self.calculator.evaluate(formulae, data={'t_3_3_avg': x}) for x in X]
+        point = (
+            self.calculator.get_variable('e_3')['value'],
+            self.calculator.get_variable('E')['value']
+        )
+        formulae = self.calculator.get_variable('E')['formulae']
+        yield 15, e_3_values, [self.calculator.evaluate(formulae, data={'e_3': e_3}) for e_3 in e_3_values], point, f'E(e_3(t_3_3_avg))'
+
+        # plot 16
+        formulae = self.calculator.get_variable('e_4')['formulae']
+        e_4_values = [self.calculator.evaluate(formulae, data={'t_3_4_avg': x}) for x in X]
+        point = (
+            self.calculator.get_variable('e_4')['value'],
+            self.calculator.get_variable('E')['value']
+        )
+        formulae = self.calculator.get_variable('E')['formulae']
+        yield 16, e_4_values, [self.calculator.evaluate(formulae, data={'e_4': e_4}) for e_4 in e_4_values], point, f'E(e_4(t_3_4_avg))'
+
+
+
+
+        # generator([
+        #     (1, , ,),
+        #     (2, , ,),
+        #     (3, , ,),
+        #     (4, , ,),
+        #     (5, , ,),
+        #     (6, , ,),
+        #     (7, , ,),
+        #     (8, , ,),
+        #     (9, , ,),
+        #     (10, , ,),
+        #     (11, , ,),
+        #     (12, , ,),
+        #     (13, , ,),
+        #     (14, , ,),
+        #     (15, , ,),
+        #     (16, , ,),
+        #
+        # ])
+        self.step1_int_df
+        self.step2_int_df
+        self.step3_int_df
+        self.step1_def_df
+        self.step2_def_df
+        self.step3_def_df
+        self.L_df
+        self.R_df
+        return ...
+
     def save_tables_content(self):
-        filepath = QFileDialog.getOpenFileName(self,
-                                               caption="Сохранить файл",
-                                               directory=".")
-        savepath = filepath[0]
-        self.step1_int_df.to_excel(savepath, sheet_name=self.tables_names[0])
-        self.step2_int_df.to_excel(savepath, sheet_name=self.tables_names[1])
-        self.step3_int_df.to_excel(savepath, sheet_name=self.tables_names[2])
-        self.step1_def_df.to_excel(savepath, sheet_name=self.tables_names[3])
-        self.step2_def_df.to_excel(savepath, sheet_name=self.tables_names[4])
-        self.step3_def_df.to_excel(savepath, sheet_name=self.tables_names[5])
-        self.L_df.to_excel(savepath, sheet_name=self.tables_names[6])
-        self.R_df.to_excel(savepath, sheet_name=self.tables_names[7])
+        print('func started')
+        if self.step1_int_df is not None and \
+           self.step2_int_df is not None and \
+           self.step3_int_df is not None and \
+           self.step1_def_df is not None and \
+           self.step2_def_df is not None and \
+           self.step3_def_df is not None and \
+           self.L_df is not None and \
+           self.R_df is not None:
+            print('if passed')
+            # noinspection PyTypeChecker
+            filepath = QFileDialog.getSaveFileName(self,
+                                                   'Сохранить файл',
+                                                   directory='.',
+                                                   initialFilter='.xlsx'
+                                                   )
+            savepath = filepath[0]
+
+            writer = pd.ExcelWriter(savepath, engine='openpyxl')
+
+            self.step1_int_df.to_excel(writer, sheet_name=self.tables_names[0], startrow=0, startcol=0)
+            self.step2_int_df.to_excel(writer, sheet_name=self.tables_names[1], startrow=0, startcol=0)
+            self.step3_int_df.to_excel(writer, sheet_name=self.tables_names[2], startrow=0, startcol=0)
+            self.step1_def_df.to_excel(writer, sheet_name=self.tables_names[3], startrow=0, startcol=0)
+            self.step2_def_df.to_excel(writer, sheet_name=self.tables_names[4], startrow=0, startcol=0)
+            self.step3_def_df.to_excel(writer, sheet_name=self.tables_names[5], startrow=0, startcol=0)
+            self.L_df.to_excel(writer, sheet_name=self.tables_names[6], startrow=0, startcol=0)
+            self.R_df.to_excel(writer, sheet_name=self.tables_names[7], startrow=0, startcol=0)
+            writer.save()
+            print('file saved')
 
 

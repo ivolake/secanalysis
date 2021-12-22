@@ -264,7 +264,8 @@ class CalculatingDataProcessor:
                 # print(f'{formulae} = {value}')
                 vals[self.dataframe.iloc[i].name] = value
                 self.calculator.set_variable(variable,
-                                             val=value)
+                                             val=value,
+                                             formulae=formulae)
             self.dataframe[func_name] = vals
 
 

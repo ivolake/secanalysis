@@ -18,16 +18,16 @@ class Calculator:
     def set_variable(self,
                      var: str,
                      val: int | float = None,
-                     symbol: Symbol = None):
+                     formulae: str = None):
         if val is None:
             val = self.__variables.get(var, {}).get('value', None)
-        if symbol is None:
-            symbol = self.__variables.get(var, {}).get('symbol', None)
+        if formulae is None:
+            formulae = self.__variables.get(var, {}).get('symbol', None)
 
         self.__variables.update({
             var: {
                 'value': val,
-                'symbol': symbol
+                'formulae': formulae
             }
         })
 
@@ -41,6 +41,9 @@ class Calculator:
     def evaluate(self,
                  expression: str,
                  data: list | dict = None):
+        if data is None:
+            data = {}
+
         if expression == 'avg':
             return np.mean(data)
         elif expression == 'msd':
@@ -59,10 +62,9 @@ class Calculator:
             formulae_vars = {var.name: var for var in formulae.free_symbols}
             to_substitute = {}
             for var_name in formulae_vars:
-                value = self.get_variable(var_name).get('value', 0)
-                # symbol = self.__variables.get(var_name, {}).get('symbol', None)
-                # if symbol is None:
-                #     self.set_variable(var=var_name,
-                #                       symbol=formulae_vars[var_name])
-                to_substitute.update({formulae_vars[var_name]: value})
+                if var_name not in data:
+                    value = self.get_variable(var_name).get('value', 0)
+                    to_substitute.update({formulae_vars[var_name]: value})
+                else:
+                    to_substitute.update({formulae_vars[var_name]: data[var_name]})
             return float(formulae.evalf(subs=to_substitute))
