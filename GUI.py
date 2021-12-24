@@ -13,6 +13,7 @@ from Arithmetics import Calculator
 # from GUI_support import DataFrameModel
 from Processors import InputDataProcessor, CalculatingDataProcessor
 from functions import get_yaml, flatten
+import logging
 
 
 def create_plot_widget(parent,
@@ -65,6 +66,16 @@ def set_data_to_table(df, table):
     # self.table.resizeColumnsToContents()
     table.resizeRowsToContents()
 
+class QTextEditLogger(logging.Handler):
+    def __init__(self, parent):
+        super().__init__()
+        self.widget = QPlainTextEdit(parent)
+        self.widget.setReadOnly(True)
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.widget.appendPlainText(msg)
+
 
 class Form(QMainWindow):
 
@@ -89,10 +100,12 @@ class Form(QMainWindow):
         self.Button_ChooseIntDatapath = None
         self.Button_ChooseConfigs = None
         self.Button_Calculate = None
+        self.RadioButton_NormFlag = None
         self.Label_IntDatapath = None
         self.Label_DefDatapath = None
         self.Label_ListConfigs = None
         self.set_first_tab()
+        self.Scroller_tab1 = None
 
         self.Layout1_tab2 = None
         self.scroller_tab2 = None
@@ -115,6 +128,7 @@ class Form(QMainWindow):
         self.int_datapath = None
         self.configs_filepaths = None
 
+
         self.step1_int_df = None
         self.step2_int_df = None
         self.step3_int_df = None
@@ -127,7 +141,33 @@ class Form(QMainWindow):
         self.shortcut = QShortcut(QKeySequence('Ctrl+S'), self)
         self.shortcut.activated.connect(self.save_tables_content)
 
+        self.layout_tab1 = None
+
     def set_first_tab(self):
+
+        self.logTextBox = QTextEditLogger(self.first)
+        # You can format what is printed to text box
+        self.logTextBox.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        logging.getLogger().addHandler(self.logTextBox)
+        # You can control the logging level
+        logging.getLogger().setLevel(logging.DEBUG)
+        for item in range(1000):
+            logging.debug('damn, a bug')
+            logging.info('something to remember')
+            logging.warning('that\'s not right')
+            logging.error('foobar')
+
+
+
+
+        self.layout_tab1 = QVBoxLayout(self.first)
+        self.Scroller_tab1 = QScrollArea(self.first)
+        self.Scroller_tab1.setWidgetResizable(True)
+        # Создаётся виджет содержимого скролла
+        self.scrollAreaWidgetContents_tab1 = QWidget()
+        # Создается второй вертикальный слой на виджете содержимого
+        self.layout2_tab1 = QGridLayout(self.scrollAreaWidgetContents_tab1)
+
         self.Button_ChooseDefDatapath = QPushButton('Выбрать исходные данные защиты', self.first)
         self.Button_ChooseDefDatapath.setGeometry(10, 20, 200, 25)
         self.Button_ChooseDefDatapath.clicked.connect(self.choose_def_datapath)
@@ -144,6 +184,10 @@ class Form(QMainWindow):
         self.Button_Calculate.setGeometry(240, 100, 120, 25)
         self.Button_Calculate.clicked.connect(self.calculate_tables)
 
+        self.RadioButton_NormFlag = QRadioButton('Нормализовать', self.first)
+        self.RadioButton_NormFlag.setGeometry(10, 150, 120, 25)
+        self.RadioButton_NormFlag.clicked.connect(self.normalize)
+
         self.Label_DefDatapath = QLabel(self.first)
         self.Label_DefDatapath.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.Label_DefDatapath.setGeometry(220, 20, 500, 40)
@@ -156,6 +200,23 @@ class Form(QMainWindow):
         self.Label_ListConfigs.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.Label_ListConfigs.setGeometry(10, 130, 500, 500)
 
+        self.layout2_tab1.addWidget(self.Button_ChooseDefDatapath)
+        self.layout2_tab1.addWidget(self.Button_ChooseIntDatapath)
+        self.layout2_tab1.addWidget(self.Button_ChooseConfigs)
+        self.layout2_tab1.addWidget(self.Button_Calculate)
+        self.layout2_tab1.addWidget(self.RadioButton_NormFlag)
+        self.layout2_tab1.addWidget(self.Label_DefDatapath)
+        self.layout2_tab1.addWidget(self.Label_IntDatapath)
+        self.layout2_tab1.addWidget(self.Label_ListConfigs)
+        self.layout2_tab1.addWidget(self.logTextBox.widget)
+
+
+        self.Scroller_tab1.setWidget(self.scrollAreaWidgetContents_tab1)
+        # На вертикальный слой добавляется скролл
+        self.layout_tab1.addWidget(self.Scroller_tab1)
+
+    def normalize(self):
+        pass
     def set_second_tab(self):
         # Создается вертикальный слой на вкладке
         self.Layout1_tab2 = QVBoxLayout(self.second)
