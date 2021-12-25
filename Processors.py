@@ -1,4 +1,5 @@
 # from typing import Iterable
+import logging
 
 import pandas as pd
 import numpy as np
@@ -6,10 +7,6 @@ import numpy as np
 from Arithmetics import Calculator
 from functions import get_yaml
 
-
-# TODO: Возможно, стоит изменить концепцию классов
-#  Step1Processor -> InputDataProcessor
-#  Step2Processor -> CalculatingDataProcessor
 
 class InputDataProcessor:
     def __init__(self,
@@ -21,6 +18,7 @@ class InputDataProcessor:
                  config: dict = None,
                  **kwargs):
         self.data_path = data_path
+        self.data_filename = self.data_path[self.data_path.rfind('/')+1:]
         self.validate_dataframe_flag = validate_data
         self.config_path = config_path
         self.config = config
@@ -38,19 +36,19 @@ class InputDataProcessor:
                                                      self.__validate_rows_flag,
                                                      self.__validate_expert_assessment_caption_flag,]):
                                                      # self.__validate_aggregation_functions_captions_flag]):
-            print('Error. Нельзя одновременно не указывать флаг валидации и указывать какие-либо параметры валидации.')
+            logging.error(f'{self.data_filename}. Нельзя одновременно не указывать флаг валидации и указывать какие-либо параметры валидации.')
         elif self.validate_dataframe_flag and not any([self.__validate_data_shape_flag,
                                                        self.__validate_rows_flag,
                                                        self.__validate_expert_assessment_caption_flag,]):
                                                        # self.__validate_aggregation_functions_captions_flag]):
-            print('Error. Нельзя одновременно указывать флаг валидации и не указывать какие-либо параметры валидации.')
+            logging.error(f'{self.data_filename}. Нельзя одновременно указывать флаг валидации и не указывать какие-либо параметры валидации.')
 
         if self.validate_dataframe_flag and self.config_path is None and self.config is None:
-            print('Error. Для валидации необходимо указать конфигурацию файла данных или путь до файла с конфигурацией.')
+            logging.error(f'{self.data_filename}. Для валидации необходимо указать конфигурацию файла данных или путь до файла с конфигурацией.')
         elif self.validate_dataframe_flag and self.config_path is not None and self.config is not None:
-            print('Error. Нельзя одновременно указывать и конфигурацию, и путь до файла с конфигурацией.')
+            logging.error(f'{self.data_filename}. Нельзя одновременно указывать и конфигурацию, и путь до файла с конфигурацией.')
         # elif self.config is None and self.config_path is None:
-        #     print('Error: Нельзя одновременно не указывать и конфигурацию, и путь до файла с конфигурацией.')
+        #     logging.error(f'{self.data_filename}. Нельзя одновременно не указывать и конфигурацию, и путь до файла с конфигурацией.')
         elif self.validate_dataframe_flag and self.config is None and self.config_path is not None:
             self.config = get_yaml(self.config_path)
 
@@ -82,7 +80,7 @@ class InputDataProcessor:
             self.dataframe = pd.read_csv()
             return True
         else:
-            print(f'Error. Тип файла данных неизвестен: {dataframe_type}')
+            logging.error(f'{self.data_filename}. Тип файла данных неизвестен: {dataframe_type}')
             return False
 
 
@@ -95,9 +93,9 @@ class InputDataProcessor:
         res = data_shape == config_data_shape
 
         if res:
-            print('Info. Размерность данных соответствует конфигурации')
+            logging.info(f'{self.data_filename}. Размерность данных соответствует конфигурации')
         else:
-            print(f'Error. Размерность данных ({data_shape}) не соответствует конфигурации ({config_data_shape})')
+            logging.error(f'{self.data_filename}. Размерность данных ({data_shape}) не соответствует конфигурации ({config_data_shape})')
 
         return res
 
@@ -111,10 +109,10 @@ class InputDataProcessor:
         res = min(rows_validation.values())
 
         if res:
-            print('Info. Названия строк соответствуют конфигурации')
+            logging.info(f'{self.data_filename}. Названия строк соответствуют конфигурации')
         else:
             error_names = '", "'.join(dict(filter(lambda x: not x[1], rows_validation.items())).keys())
-            print(f'Error. Названия строк "{error_names}" не соответствуют конфигурации')
+            logging.error(f'{self.data_filename}. Названия строк "{error_names}" не соответствуют конфигурации')
 
         return res
 
@@ -124,9 +122,9 @@ class InputDataProcessor:
         res = data_expert_assessment_caption == self.config['expert_assessments_caption']
 
         if res:
-            print('Info. Название серии экспертных заключений соответствует конфигурации')
+            logging.info(f'{self.data_filename}. Название серии экспертных заключений соответствует конфигурации')
         else:
-            print(f'Error. Название серии экспертных заключений "{data_expert_assessment_caption}" не соответствует конфигурации')
+            logging.error(f'{self.data_filename}. Название серии экспертных заключений "{data_expert_assessment_caption}" не соответствует конфигурации')
 
         return res
 
@@ -140,10 +138,10 @@ class InputDataProcessor:
     #     res = min(funcs_validation.values())
     #
     #     if res:
-    #         print('Info. Список функций агрегации соответствует конфигурации')
+    #         logging.info(f'{self.data_filename}. Список функций агрегации соответствует конфигурации')
     #     else:
     #         error_names = '", "'.join(dict(filter(lambda x: not x[1], funcs_validation.items())).keys())
-    #         print(f'Error. Список функций агрегации ("{error_names}") не соответствует конфигурации')
+    #         logging.error(f'{self.data_filename}. Список функций агрегации ("{error_names}") не соответствует конфигурации')
     #
     #     return res
 
@@ -201,7 +199,7 @@ class InputDataProcessor:
         if dataframe_read and self.validate_dataframe_flag:
             dataframe_validated = self.__validate_dataframe()
         else:
-            dataframe_validated = False
+            dataframe_validated = dataframe_read
 
         dataframe_finalized = self.finalize_dataframe()
 
@@ -212,7 +210,7 @@ class InputDataProcessor:
         if dataframe_created:
             return self.dataframe
         else:
-            print('Датафрейм еще не создан. Создать датафрейм можно с помощью метода create_dataframe.')
+            logging.error(f'{self.data_filename}. Датафрейм еще не создан. Создать датафрейм можно с помощью метода create_dataframe.')
 
 
 class CalculatingDataProcessor:
@@ -225,11 +223,11 @@ class CalculatingDataProcessor:
         self.__calculator = calculator
 
         if self.config_path is None and self.config is None:
-            print('Error. Необходимо указать конфигурацию файла данных или путь до файла с конфигурацией.')
+            logging.error('Необходимо указать конфигурацию файла данных или путь до файла с конфигурацией.')
         elif self.config_path is not None and self.config is not None:
-            print('Error. Нельзя одновременно указывать и конфигурацию, и путь до файла с конфигурацией.')
+            logging.error('Нельзя одновременно указывать и конфигурацию, и путь до файла с конфигурацией.')
         # elif self.config is None and self.config_path is None:
-        #     print('Error: Нельзя одновременно не указывать и конфигурацию, и путь до файла с конфигурацией.')
+        #     logging.error('Нельзя одновременно не указывать и конфигурацию, и путь до файла с конфигурацией.')
         elif self.config is None and self.config_path is not None:
             self.config = get_yaml(self.config_path)
 

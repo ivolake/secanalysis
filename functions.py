@@ -2,6 +2,7 @@ import argparse
 import ruamel.yaml
 import os
 import pandas as pd
+import numpy as np
 
 def get_yaml(path: str) -> dict:
     with open(os.path.abspath(path), 'r', encoding='utf-8') as f:
@@ -27,3 +28,8 @@ def flatten(rich_df):
         df_t.columns = pd.Series(map(lambda t: ' '.join([str(x) for x in t]) if isinstance(t, tuple) else t, df_t.columns))
     df_t = df_t.T.reset_index().T.reset_index(drop=True)
     return df_t
+
+def minmax_scale(X):
+    X_min = min(X)
+    X_max = max(X)
+    return np.array([(x - X_min)/(X_max - X_min) for x in X])
