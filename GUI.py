@@ -15,7 +15,7 @@ from textwrap3 import wrap
 from Arithmetics import Calculator
 # from GUI_support import DataFrameModel
 from Processors import InputDataProcessor, CalculatingDataProcessor
-from functions import get_yaml, flatten, minmax_scale, module_funcs
+from functions import get_yaml, flatten, minmax_scale
 
 
 def create_plot_widget(parent,
@@ -96,7 +96,8 @@ class Form(QMainWindow):
 
         self.setWindowTitle('SecAnalysis')
         self.setCentralWidget(tab)
-        self.resize(740, 480)
+        # self.resize(740, 480)
+        self.showMaximized()
 
         self.first = QWidget()
         self.second = QWidget()
