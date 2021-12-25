@@ -15,7 +15,7 @@ from textwrap3 import wrap
 from Arithmetics import Calculator
 # from GUI_support import DataFrameModel
 from Processors import InputDataProcessor, CalculatingDataProcessor
-from functions import get_yaml, flatten, minmax_scale
+from functions import get_yaml, flatten, minmax_scale, module_funcs
 
 
 def create_plot_widget(parent,
@@ -440,7 +440,7 @@ class Form(QMainWindow):
         # noinspection PyTypeChecker
         filepath = QFileDialog.getOpenFileName(self,
                                                caption="Выбрать файл",
-                                               directory=".")
+                                               directory="")
         self.def_datapath = filepath[0]
 
         text = '\n'.join(wrap(f'Файл данных Защиты: {self.def_datapath}', 80))
@@ -452,7 +452,7 @@ class Form(QMainWindow):
         # noinspection PyTypeChecker
         filepath = QFileDialog.getOpenFileName(self,
                                                caption="Выбрать файл",
-                                               directory=".")
+                                               directory="")
         self.int_datapath = filepath[0]
 
         text = '\n'.join(wrap(f'Файл данных Нарушителя: {self.int_datapath}', 80))
@@ -464,7 +464,7 @@ class Form(QMainWindow):
         # noinspection PyTypeChecker
         files_dir_name = QFileDialog.getExistingDirectory(self,
                                                           caption="Выбрать папку",
-                                                          directory=".")
+                                                          directory="")
         if isinstance(files_dir_name, str) and len(files_dir_name) > 0:
             self.configs_filepaths = [os.path.abspath(f'{files_dir_name}\\{filename}')
                                       for filename in
@@ -487,8 +487,8 @@ class Form(QMainWindow):
                     '.xls' in self.int_datapath or '.xlsx' in self.int_datapath or '.csv' in self.int_datapath:
                 if self.tables_calculated:
                     self.update_second_tab()
-                self.set_second_tab()
                 logging.info('Начат процесс расчета таблиц.')
+                self.set_second_tab()
                 self.configs = {}
                 for filepath in self.configs_filepaths:
                     config = get_yaml(filepath)
@@ -577,15 +577,45 @@ class Form(QMainWindow):
             sleep(1)
             if self.tables_plotted:
                 logging.info('Обновление страницы с графиками.')
-                self.update_third_tab()
-                self.set_third_tab(calculate_plots=True)
+                # self.update_third_tab()
+                plots_iterator = self.get_plot_data()
+                for i in range(1, self.Layout2_tab3.rowCount()):
+                    for j in range(1, self.Layout2_tab3.columnCount()):
+                        child = self.Layout2_tab3.itemAtPosition(i, j)
+                        # logging.info(f'{i}.{j}: child{type(child)}')
+                        # if child is not None and \
+                        #    'widget' in dir(child) and \
+                        #    child.widget() is not None:
+                        #     logging.info(f'{i}.{j}: child.widget{type(child.widget())}')
+                        if child is not None and \
+                           'widget' in dir(child) and \
+                           child.widget() is not None and \
+                           isinstance(child.widget(), PlotWidget):
+                            # logging.info(f'{i}.{j}: child.widget{type(child.widget())}')
+                            _i, dataX, dataY, actual_point, title = next(plots_iterator)
+                            child.widget().clear()
+                            child.widget().plot(x=dataX,
+                                                y=dataY,
+                                                pen=pg.mkPen('black', width=3))
+                            child.widget().setBackground('white')
+                            child.widget().showGrid(True, True)
+                            child.widget().setTitle(title)
+
+                            scatter = pg.ScatterPlotItem(
+                                size=6, brush=pg.mkBrush(255, 0, 0, 255))
+                            # creating spots using the random position
+                            spots = [{'pos': actual_point, 'data': 1}]
+                            # adding points to the scatter plot
+                            scatter.addPoints(spots)
+                            child.widget().addItem(scatter)
+                # self.set_third_tab(calculate_plots=True)
             else:
                 self.set_third_tab(calculate_plots=True)
                 self.tables_plotted = True
         else:
             logging.error('Нельзя отобразить графики, не проведя расчеты.')
 
-    def get_plot_data(self) -> tuple[tuple, tuple]:
+    def get_plot_data(self):
         X = range(0, 100, 1)
 
         # plot 1
